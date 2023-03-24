@@ -22,14 +22,14 @@ public class AnswerService {
     }
 
     /*
-    Though IllegalStateException return a signal if function invoke at an illegal or inappropriate time, it is not a good case for this scenario
-    Use EntityNotFoundException will be appropriate in this scenario, due to the meaning of NotFound.
+    Though IllegalStateException return a signal if function invokes at an illegal or inappropriate time, it is not a good case for this scenario
+    Using EntityNotFoundException will be appropriate in this scenario, due to the meaning of NotFound.
      */
 
     public Optional<Question> getQuestionById(int questionId){
         Optional<Question> question = questionService.getQuestion(questionId);
         if (question.isEmpty()) {
-            throw new EntityNotFoundException("Question not found.");
+            throw new IllegalStateException("Question not found.");
         }
         return question;
     }
@@ -58,20 +58,17 @@ public class AnswerService {
             throw new EntityNotFoundException("Cannot find answer due to question is not found.");
         }
         Optional <Answer> answer = answerRepository.findById(answerId);
-        if(answer.isEmpty()){
-            throw new EntityNotFoundException("Answer not found.");
-        }
-        return answer.map(answerDTOMapper).get();
+        return answer.isPresent() ? answer.map(answerDTOMapper).get() : null;
     }
 
-    public void addAnswer(int questionId, AnswerDTO reqBody) {
+    public AnswerDTO addAnswer(int questionId, AnswerDTO reqBody) {
         Optional<Question> paramQuestion = getQuestionById(questionId);
         if (paramQuestion.isEmpty()) {
             throw new EntityNotFoundException("Question not found.");
         }
-        Question question = paramQuestion.get();
-        answerRepository.save(new Answer(reqBody.getName(),
-                reqBody.isCorrect(), question));
+        answerRepository.save(new Answer(reqBody.getName(), reqBody.isCorrect(), paramQuestion.get()));
+        Optional<Answer> newAnswer = answerRepository.findByName(reqBody.getName());
+        return newAnswer.isPresent() ? newAnswer.map(answerDTOMapper).get() : null;
     }
 
 
@@ -90,6 +87,7 @@ public class AnswerService {
         }
 
         Answer answer = optionalAnswer.get();
+        /* I think validation for Answer is enough in this part. */
         if(reqBody.getName() != null) {
             answer.setName(reqBody.getName());
             answer.setCorrect(reqBody.isCorrect());

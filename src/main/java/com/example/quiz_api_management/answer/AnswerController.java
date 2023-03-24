@@ -1,5 +1,6 @@
 package com.example.quiz_api_management.answer;
 
+import com.example.quiz_api_management.common.ResponseReturn;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,47 +23,69 @@ public class AnswerController {
      */
     @GetMapping("questions/{questionid}/answers")
     @ResponseBody
-    public ResponseEntity<List<AnswerDTO>> getAnswersByQuestion(@PathVariable("questionid") int questionId){
+    public ResponseEntity<ResponseReturn> getAnswersByQuestion(@PathVariable("questionid") int questionId){
         List<AnswerDTO> answersDTO = answerService.getAnswersByQuestion(questionId);
-        if(answersDTO.isEmpty())
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        return ResponseEntity.ok().body(answersDTO);
+        return new ResponseEntity<>(
+                new ResponseReturn("List of answer is returned.",
+                                200,
+                                true,
+                                answersDTO), HttpStatus.OK);
     }
 
+
     @GetMapping("questions/{questionid}/answers/shuffle")
-    public ResponseEntity<List<AnswerDTO>> shuffleAnswers(@PathVariable("questionid") int questionId) {
-        return ResponseEntity.ok().body(answerService.shuffleAnswers(questionId));
+    public ResponseEntity<ResponseReturn> shuffleAnswers(@PathVariable("questionid") int questionId) {
+        return new ResponseEntity<>(
+                new ResponseReturn("Answers are shuffled.",
+                        200,
+                        true,
+                        answerService.shuffleAnswers(questionId)), HttpStatus.OK);
     }
 
     @GetMapping("questions/{questionid}/answers/{answerid}")
-    public ResponseEntity<AnswerDTO> getAnswer(@PathVariable("questionid") int questionId,
+    public ResponseEntity<ResponseReturn> getAnswer(@PathVariable("questionid") int questionId,
                                @PathVariable("answerid") int answerid) {
-        return ResponseEntity.ok().body(answerService.getAnswer(questionId, answerid));
+        return new ResponseEntity<>(
+                new ResponseReturn("An answer is returned.",
+                        200,
+                        true,
+                        answerService.getAnswer(questionId, answerid)), HttpStatus.OK);
     }
-
-    /*
-    <Key, Value> here is actually a generic used for RequestBody parameter. Generic will help the method reuse objects of different types.
-    In this case, I use generics due to the request body is a Json object which are not constant primitive types.
-     However, it can lead to uncertain readability, so it is considered to use Object, instead*/
 
     /*
     201 - Created returns when the request succeeded, and a new resource was created as a result.
      */
-
     @PostMapping("questions/{questionid}/answers/add")
-    public ResponseEntity addAnswer(@PathVariable("questionid") int questionId,
+    public ResponseEntity<ResponseReturn> addAnswer(@PathVariable("questionid") int questionId,
                                          @RequestBody AnswerDTO reqBody){
-        answerService.addAnswer(questionId, reqBody);
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .build(); // Create a Response instance from the ResponseBuilder
+        AnswerDTO newAnswer = answerService.addAnswer(questionId, reqBody);
+        return new ResponseEntity<>(
+                new ResponseReturn("New answer is added.",
+                        201,
+                        true,
+                        newAnswer), HttpStatus.CREATED);
     }
-
+    /*
+    400 - Bad Request status code indicates that the server cannot proceed.
+    I think validation for Answer is enough in this part.
+     */
     @PutMapping("questions/{questionid}/answers/{answerid}/edit")
-    public ResponseEntity updateAnswer(@PathVariable("questionid") int questionId,
+    public  ResponseEntity<ResponseReturn> updateAnswer(@PathVariable("questionid") int questionId,
                              @PathVariable("answerid") int answerId,
                              @RequestBody AnswerDTO reqBody){
+        if (reqBody == null){
+            return new ResponseEntity<>(
+                    new ResponseReturn("Missing required fields.",
+                            400,
+                            false,
+                            null), HttpStatus.NOT_ACCEPTABLE);
+        }
         AnswerDTO updatedAnswer = answerService.updateAnswer(questionId, answerId, reqBody);
-        return ResponseEntity.ok().body(updatedAnswer);
+        return new ResponseEntity<>(
+                new ResponseReturn("Answer is updated.",
+                201,
+                true,
+                updatedAnswer), HttpStatus.OK);
     }
 
 
@@ -70,9 +93,13 @@ public class AnswerController {
     HttpStatus - 204 - No Content means that there is no content to send in this request.
      */
     @DeleteMapping("questions/{questionid}/answers/{answerid}/delete")
-    public ResponseEntity deleteAnswer(@PathVariable("questionid") int questionId,
+    public ResponseEntity<ResponseReturn> deleteAnswer(@PathVariable("questionid") int questionId,
                                    @PathVariable("answerid") int answerId){
         answerService.deleteAnswer(questionId, answerId);
-        return ResponseEntity.noContent().build();
+        return new ResponseEntity<>(
+                new ResponseReturn("Deleted an answer with answerId: " + answerId,
+                        204,
+                        true,
+                        null), HttpStatus.NO_CONTENT);
     }
 }

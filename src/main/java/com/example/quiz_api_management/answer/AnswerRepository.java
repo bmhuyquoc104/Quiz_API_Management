@@ -25,9 +25,9 @@ public interface AnswerRepository extends CrudRepository<Answer, Integer> {
     I just think that the shuffle method can be put in read operation in CRUD so CrudRepository is enough.
      */
 
-
     /*
     No need to use query, ORM can map relationship for this method.
      */
     List<Answer> findAnswerByQuestion(Optional<Question> question);
+    Optional<Answer> findByName(String answerName);
 }
