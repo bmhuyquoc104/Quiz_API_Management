@@ -46,14 +46,6 @@ public class AnswerService {
         return answers.stream().map(answerDTOMapper).toList();
     }
 
-    /*
-    public AnswerDTO getAnswer(int answerId){
-        Optional <Answer> answer = answerRepository.findById(answerId);
-        return answer.isPresent() ? answer.map(answerDTOMapper).get() : null;
-    }
-
-     */
-
     public AnswerDTO getAnswer(Optional<Question> question, int answerId){
         Optional<Answer> optionalAnswer = answerRepository.findAnswerByQuestion(question)
                 .stream()
