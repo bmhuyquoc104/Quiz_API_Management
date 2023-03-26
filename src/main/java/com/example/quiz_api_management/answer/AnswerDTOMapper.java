@@ -13,7 +13,7 @@ public class AnswerDTOMapper implements Function<Answer, AnswerDTO> {
     public AnswerDTO apply(Answer answer){
         return new AnswerDTO(
                 answer.getId(),
-                answer.getName(),
+                answer.getValue(),
                 answer.isCorrect(),
                 answer.isRemoved(),
                 answer.getCreatedAt(),

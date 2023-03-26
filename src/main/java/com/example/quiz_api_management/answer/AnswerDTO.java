@@ -15,7 +15,7 @@ In this case, we just want only questionId not the whole of information of quest
 @Setter
 public class AnswerDTO {
     private int id;
-    private String name;
+    private String value;
     private boolean isCorrect;
     private boolean isRemoved;
     private LocalDateTime createdAt;
@@ -26,7 +26,7 @@ public class AnswerDTO {
     public String toString() {
         return "AnswerDTO{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
+                ", value='" + value + '\'' +
                 ", isCorrect=" + isCorrect +
                 ", isRemoved=" + isRemoved +
                 ", createdAt=" + createdAt +

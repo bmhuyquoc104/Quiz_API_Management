@@ -29,5 +29,6 @@ public interface AnswerRepository extends CrudRepository<Answer, Integer> {
     No need to use query, ORM can map relationship for this method.
      */
     List<Answer> findAnswerByQuestion(Optional<Question> question);
-    Optional<Answer> findByName(String answerName);
+    Optional<Answer> findByValue(String answerValue);
+
 }
