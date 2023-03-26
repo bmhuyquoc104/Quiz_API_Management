@@ -2,7 +2,6 @@ package com.example.quiz_api_management.answer;
 
 import com.example.quiz_api_management.question.Question;
 import com.example.quiz_api_management.question.QuestionService;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,20 +21,15 @@ public class AnswerService {
     }
 
     /*
-    Though IllegalStateException return a signal if function invoke at an illegal or inappropriate time, it is not a good case for this scenario
-    Use EntityNotFoundException will be appropriate in this scenario, due to the meaning of NotFound.
+    Though IllegalStateException return a signal if function invokes at an illegal or inappropriate time, it is not a good case for this scenario
+    Using EntityNotFoundException will be appropriate in this scenario, due to the meaning of NotFound.
      */
 
     public Optional<Question> getQuestionById(int questionId){
-        Optional<Question> question = questionService.getQuestion(questionId);
-        if (question.isEmpty()) {
-            throw new EntityNotFoundException("Question not found.");
-        }
-        return question;
+        return questionService.getQuestion(questionId);
     }
 
-    public List<AnswerDTO> getAnswersByQuestion(int questionId) {
-        Optional<Question> question = getQuestionById(questionId);
+    public List<AnswerDTO> getAnswersByQuestion(Optional<Question> question) {
         return answerRepository.findAnswerByQuestion(question)
                 .stream()
                 .map(answerDTOMapper)
@@ -46,32 +40,26 @@ public class AnswerService {
     We should shuffle list of model Answer instead of list of answerDTO, due to answerDTO will also have questionId,
     and it will be immutable (cause is maybe having 2 integers to order). It does not shuffle if the collection is immutable
      */
-    public List<AnswerDTO> shuffleAnswers(int questionId) {
-        Optional<Question> question = getQuestionById(questionId);
+    public List<AnswerDTO> shuffleAnswers(Optional<Question> question) {
         List<Answer> answers = answerRepository.findAnswerByQuestion(question);
         Collections.shuffle(answers);
         return answers.stream().map(answerDTOMapper).toList();
     }
 
-    public AnswerDTO getAnswer(int questionId, int answerId){
-        if (getQuestionById(questionId).isEmpty()){
-            throw new EntityNotFoundException("Cannot find answer due to question is not found.");
-        }
-        Optional <Answer> answer = answerRepository.findById(answerId);
-        if(answer.isEmpty()){
-            throw new EntityNotFoundException("Answer not found.");
-        }
-        return answer.map(answerDTOMapper).get();
+    public AnswerDTO getAnswer(Optional<Question> question, int answerId){
+        Optional<Answer> optionalAnswer = answerRepository.findAnswerByQuestion(question)
+                .stream()
+                .filter(answer -> (answerId == answer.getId())) // Find if that answer.Id == params.answerId
+                .findAny();
+        return optionalAnswer.isPresent() ? optionalAnswer.map(answerDTOMapper).get() : null;
     }
 
-    public void addAnswer(int questionId, AnswerDTO reqBody) {
-        Optional<Question> paramQuestion = getQuestionById(questionId);
-        if (paramQuestion.isEmpty()) {
-            throw new EntityNotFoundException("Question not found.");
-        }
+    public AnswerDTO addAnswer(Optional<Question> paramQuestion, AnswerDTO reqBody) {
         Question question = paramQuestion.get();
-        answerRepository.save(new Answer(reqBody.getName(),
-                reqBody.isCorrect(), question));
+        Answer addedAnswer = new Answer(reqBody.getValue(), reqBody.isCorrect(), question);
+        answerRepository.save(addedAnswer);
+        Optional<Answer> newAnswer = answerRepository.findByValue(addedAnswer.getValue());
+        return newAnswer.isPresent() ? newAnswer.map(answerDTOMapper).get() : null;
     }
 
 
@@ -79,33 +67,26 @@ public class AnswerService {
     Annotation @Transactional provokes the rollback if an exception occurs.
      */
     @Transactional
-    public AnswerDTO updateAnswer(int questionId, int answerId, AnswerDTO reqBody) {
-        if (getAnswersByQuestion(questionId) == null){
-            throw new EntityNotFoundException("Cannot find answer due to question is not found.");
-        }
-
+    public AnswerInputValidation updateAndValidate(int answerId, AnswerDTO reqBody) {
+        AnswerInputValidation answerInputValidation = new AnswerInputValidation(reqBody);
         Optional<Answer> optionalAnswer = answerRepository.findById(answerId);
-        if(optionalAnswer.isEmpty()){
-            throw new EntityNotFoundException("Cannot find answer due to question is not found.");
-        }
 
-        Answer answer = optionalAnswer.get();
-        if(reqBody.getName() != null) {
-            answer.setName(reqBody.getName());
-            answer.setCorrect(reqBody.isCorrect());
-            answerRepository.save(answer);
+        if (answerInputValidation.isAccepted()) {
+            updateAnswer(optionalAnswer, reqBody);
+            AnswerDTO responseAnswer = optionalAnswer.map(answerDTOMapper).get();
+            answerInputValidation.setAnswer(responseAnswer);
         }
-        return optionalAnswer.map(answerDTOMapper).get();
+        return answerInputValidation;
     }
 
-    public void deleteAnswer(int questionId, int answerId) {
-        if (getAnswersByQuestion(questionId) == null){
-            throw new EntityNotFoundException("Cannot find answers due to question is not found.");
-        }
-        boolean exists = answerRepository.existsById(answerId);
-        if (!exists) {
-            throw new EntityNotFoundException("Answer with id" + answerId + "is not valid.");
-        }
+    public void updateAnswer(Optional<Answer> optionalAnswer, AnswerDTO reqBody){
+        Answer answer = optionalAnswer.get();
+        answer.setValue(reqBody.getValue());
+        answer.setCorrect(reqBody.isCorrect());
+        answerRepository.save(answer);
+    }
+
+    public void deleteAnswer(int answerId) {
         answerRepository.deleteById(answerId);
     }
 }

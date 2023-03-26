@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
 
 
 @Entity
-@Table (name ="answer")
+@Table (name = "answer")
 /*
  These annotations belong to lombok, which can generate setter and getter methods automatically
  Moreover, it reduces verbosity of the code and avoid repetition.
@@ -38,8 +38,8 @@ public class Answer {
 
     @Column(name="id", unique = true)
     private int id;
-    @Column(name="name", nullable = false)
-    private String name;
+    @Column(name="value", nullable = false)
+    private String value;
     @Column(name="is_correct", nullable = false)
     private boolean isCorrect;
 
@@ -64,8 +64,8 @@ public class Answer {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    public Answer(String name, boolean isCorrect, Question question) {
-        this.name = name;
+    public Answer(String value, boolean isCorrect, Question question) {
+        this.value = value;
         this.isCorrect = isCorrect;
         this.isRemoved = false;
         this.question = question;
@@ -76,4 +76,9 @@ public class Answer {
     public Answer() {
     }
 
+    public Answer(AnswerDTO reqBody, Question question) {
+        this.value = reqBody.getValue();
+        this.isCorrect = reqBody.isCorrect();
+        this.question = question;
+    }
 }
