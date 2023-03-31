@@ -46,45 +46,50 @@ public class AnswerService {
         return answers.stream().map(answerDTOMapper).toList();
     }
 
-    public AnswerDTO getAnswer(Optional<Question> question, int answerId){
-        Optional<Answer> optionalAnswer = answerRepository.findAnswerByQuestion(question)
+
+    public Optional<AnswerDTO> getAnswer(Optional<Question> question, int answerId){
+        Optional<Answer> checkAnswer =  answerRepository.findAnswerByQuestion(question)
                 .stream()
                 .filter(answer -> (answerId == answer.getId())) // Find if that answer.Id == params.answerId
                 .findAny();
-        return optionalAnswer.isPresent() ? optionalAnswer.map(answerDTOMapper).get() : null;
+        return (checkAnswer.isPresent()) ? Optional.of(checkAnswer.map(answerDTOMapper).get()) : Optional.empty();
+
     }
 
-    public AnswerDTO addAnswer(Optional<Question> paramQuestion, AnswerDTO reqBody) {
+    public AnswerDTO createAnswer(Optional<Question> paramQuestion, AnswerDTO reqBody) {
         Question question = paramQuestion.get();
         Answer addedAnswer = new Answer(reqBody.getValue(), reqBody.isCorrect(), question);
         answerRepository.save(addedAnswer);
-        Optional<Answer> newAnswer = answerRepository.findByValue(addedAnswer.getValue());
-        return newAnswer.isPresent() ? newAnswer.map(answerDTOMapper).get() : null;
+        List<Answer> answers = answerRepository.findAnswerByQuestion(Optional.of(question)).stream().toList();
+        return answers.stream()
+                .filter(answer -> (Objects.equals(answer.getValue(), reqBody.getValue())))
+                .findAny()
+                .map(answerDTOMapper).get();
     }
 
+
+    public Optional<Answer> notExistAnswer(Optional<Question> paramQuestion, AnswerDTO reqBody){
+        List<Answer> answers = answerRepository.findAnswerByQuestion(paramQuestion);
+        return answers
+                .stream()
+                .filter(answer -> (Objects.equals(reqBody.getValue(), answer.getValue())))
+                .findAny();
+    }
 
     /*
     Annotation @Transactional provokes the rollback if an exception occurs.
      */
     @Transactional
-    public AnswerInputValidation updateAndValidate(int answerId, AnswerDTO reqBody) {
-        AnswerInputValidation answerInputValidation = new AnswerInputValidation(reqBody);
+    public AnswerDTO updateAnswer(int answerId, AnswerDTO reqBody) {
         Optional<Answer> optionalAnswer = answerRepository.findById(answerId);
-
-        if (answerInputValidation.isAccepted()) {
-            updateAnswer(optionalAnswer, reqBody);
-            AnswerDTO responseAnswer = optionalAnswer.map(answerDTOMapper).get();
-            answerInputValidation.setAnswer(responseAnswer);
-        }
-        return answerInputValidation;
-    }
-
-    public void updateAnswer(Optional<Answer> optionalAnswer, AnswerDTO reqBody){
         Answer answer = optionalAnswer.get();
         answer.setValue(reqBody.getValue());
         answer.setCorrect(reqBody.isCorrect());
         answerRepository.save(answer);
+        Optional<Answer> newAnswer = answerRepository.findById(answerId);
+        return newAnswer.isPresent() ? newAnswer.map(answerDTOMapper).get() : null;
     }
+
 
     public void deleteAnswer(int answerId) {
         answerRepository.deleteById(answerId);

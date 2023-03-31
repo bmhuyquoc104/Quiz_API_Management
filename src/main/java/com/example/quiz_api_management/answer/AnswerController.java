@@ -1,12 +1,18 @@
 package com.example.quiz_api_management.answer;
 
+import com.example.quiz_api_management.common.RequiredFieldSignal;
 import com.example.quiz_api_management.common.ResponseReturn;
+import com.example.quiz_api_management.exception.DuplicateException;
+import com.example.quiz_api_management.exception.NotFoundException;
 import com.example.quiz_api_management.question.Question;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @RestController()
@@ -24,22 +30,27 @@ public class AnswerController {
     ok() method actually returns HTTP status OK.
     200 - OK returns when the request succeeded, and is allowed in GET, HEAD, PUT, POST & TRACE
      */
+
     @GetMapping("questions/{questionid}/answers")
     @ResponseBody
     public ResponseEntity<ResponseReturn> getAnswersByQuestion(@PathVariable("questionid") int questionId) {
-        Optional<Question> question = answerService.getQuestionById(questionId);
-        if (question.isEmpty()) {
-            return new ResponseEntity<>(
-                    new ResponseReturn("Cannot return question, check the parameter.",
-                            404,
-                            false,
-                            null), HttpStatus.BAD_REQUEST);
+        /*
+            ofNullable() method in here is used to get an instance of this Optional class with Question Entity
+            If the value is null, this method returns an empty instance.
 
-        }
+            orElseThrow() in here is used to throw exceptions
+            if an instance of Optional class with Question Entity is null
+
+            => Check if question is not found. Otherwise, an exception is thrown.
+        */
+        Optional<Question> question = Optional.ofNullable(answerService.getQuestionById(questionId)
+                .orElseThrow(() -> new NotFoundException("Question not found")));
+
         List<AnswerDTO> answersDTO = answerService.getAnswersByQuestion(question);
         return new ResponseEntity<>(
-                new ResponseReturn("List of answers is returned.",
-                        200,
+                new ResponseReturn(LocalDateTime.now(),
+                        "List of answers is returned.",
+                        HttpStatus.OK.value(),
                         true,
                         answersDTO), HttpStatus.OK);
     }
@@ -47,18 +58,13 @@ public class AnswerController {
 
     @GetMapping("questions/{questionid}/answers/shuffle")
     public ResponseEntity<ResponseReturn> shuffleAnswers(@PathVariable("questionid") int questionId) {
-        Optional<Question> question = answerService.getQuestionById(questionId);
-        if (question.isEmpty()) {
-            return new ResponseEntity<>(
-                    new ResponseReturn("Cannot return question, check the parameter.",
-                            404,
-                            false,
-                            null), HttpStatus.BAD_REQUEST);
-        }
+        Optional<Question> question = Optional.ofNullable(answerService.getQuestionById(questionId)
+                .orElseThrow(() -> new NotFoundException("Question not found")));
 
         return new ResponseEntity<>(
-                new ResponseReturn("Answers are shuffled.",
-                        200,
+                new ResponseReturn(LocalDateTime.now(),
+                        "Answers are shuffled.",
+                        HttpStatus.OK.value(),
                         true,
                         answerService.shuffleAnswers(question)), HttpStatus.OK);
     }
@@ -66,32 +72,21 @@ public class AnswerController {
     @GetMapping("questions/{questionid}/answers/{answerid}")
     public ResponseEntity<ResponseReturn> getAnswer(@PathVariable("questionid") int questionId,
                                                     @PathVariable("answerid") int answerId) {
-        Optional<Question> question = answerService.getQuestionById(questionId);
-        if (question.isEmpty()) {
-            return new ResponseEntity<>(
-                    new ResponseReturn("Cannot return question, check the parameter.",
-                            404,
-                            false,
-                            null), HttpStatus.BAD_REQUEST);
 
-        }
+        Optional<Question> question = Optional.ofNullable(answerService.getQuestionById(questionId)
+                .orElseThrow(() -> new NotFoundException("Question not found")));
 
-        AnswerDTO answerDTO = answerService.getAnswer(question, answerId);
-        if (answerDTO == null) {
-            return new ResponseEntity<>(
-                    new ResponseReturn("Answer not found, check the parameter again.",
-                            404,
-                            false,
-                            null), HttpStatus.NOT_FOUND);
+        // Like above, this statement is used to check if answer is not found.
+        // If not found, an exception is thrown
+        Optional<AnswerDTO> answerDTO = Optional.ofNullable(answerService.getAnswer(question, answerId)
+                .orElseThrow(() -> new NotFoundException("Answer not found")));
 
-        }
-        else {
-            return new ResponseEntity<>(
-                    new ResponseReturn("An answer is returned.",
-                            200,
+        return new ResponseEntity<>(
+                new ResponseReturn(LocalDateTime.now(),
+                            "An answer is returned.",
+                            HttpStatus.OK.value(),
                             true,
                             answerDTO), HttpStatus.OK);
-        }
     }
 
     /*
@@ -99,71 +94,102 @@ public class AnswerController {
      */
     @PostMapping("questions/{questionid}/answers/add")
     public ResponseEntity<ResponseReturn> addAnswer(@PathVariable("questionid") int questionId,
-                                                    @RequestBody AnswerDTO reqBody) {
-        Optional<Question> question = answerService.getQuestionById(questionId);
-        if (question.isEmpty()) {
-            return new ResponseEntity<>(
-                    new ResponseReturn("Cannot return question, check the parameter.",
-                            404,
-                            false,
-                            null), HttpStatus.BAD_REQUEST);
+                                                    @Valid @RequestBody AnswerDTO reqBody, BindingResult bindingResult) {
+        Optional<Question> question = Optional.ofNullable(answerService.getQuestionById(questionId).orElseThrow(()
+                -> new NotFoundException("Question not found")));
 
+        /*
+        bindingResult is used along with @Valid annotation.
+        The purpose why it is used is that to catch if the fields in RequestBody are not valid.
+
+        getField() to get the key of RequestBody, getDefaultMessage() to show why that field is not valid.
+
+        => Check if RequestBody is valid.
+         */
+        if (bindingResult.hasErrors()) {
+            List<RequiredFieldSignal> requiredFieldSignals = new ArrayList<>();
+            String errorMessage = "";
+            bindingResult.getFieldErrors().forEach(
+                    fieldError -> {
+                        requiredFieldSignals.add(
+                                new RequiredFieldSignal(fieldError.getField(), fieldError.getDefaultMessage()));
+                    }
+            );
+            for (RequiredFieldSignal requiredFieldSignal : requiredFieldSignals){
+                errorMessage += "Field required: "+ requiredFieldSignal.getField() +
+                        ", cause: "+ requiredFieldSignal.getCause() + " \n";
+            }
+
+
+            return new ResponseEntity<>(new ResponseReturn(LocalDateTime.now(),
+                    errorMessage,
+                    HttpStatus.BAD_REQUEST.value(),
+                    false,
+                    null), HttpStatus.BAD_REQUEST);
         }
 
-        AnswerDTO newAnswer = answerService.addAnswer(question, reqBody);
+        // Check any answer's value is similar to the value of RequestBody
+        if (answerService.notExistAnswer(question, reqBody).isPresent()) {
+            throw new DuplicateException("Duplicate value found.");
+        }
+
+        AnswerDTO newAnswer = answerService.createAnswer(question, reqBody);
         return new ResponseEntity<>(
-                new ResponseReturn("New answer is added.",
-                        201,
+                new ResponseReturn(LocalDateTime.now(),
+                        "New answer is added.",
+                        HttpStatus.CREATED.value(),
                         true,
                         newAnswer), HttpStatus.CREATED);
     }
 
     /*
     400 - Bad Request status code indicates that the server cannot proceed.
-    I think validation for Answer is enough in this part.
      */
     @PutMapping("questions/{questionid}/answers/{answerid}/edit")
     public ResponseEntity<ResponseReturn> updateAnswer(@PathVariable("questionid") int questionId,
                                                        @PathVariable("answerid") int answerId,
-                                                       @RequestBody AnswerDTO reqBody) {
-        Optional<Question> question = answerService.getQuestionById(questionId);
-        if (question.isEmpty()) {
-            return new ResponseEntity<>(
-                    new ResponseReturn("Cannot return question, check the parameter.",
-                            404,
-                            false,
-                            null), HttpStatus.NOT_FOUND);
+                                                       @Valid @RequestBody AnswerDTO reqBody, BindingResult bindingResult) {
 
+        // Check question is not found
+        Optional<Question> question = Optional.ofNullable(answerService.getQuestionById(questionId).orElseThrow(()
+                -> new NotFoundException("Question not found")));
+
+        // Check answer is not found
+        Optional.of(answerService.getAnswer(question, answerId).orElseThrow(()
+                -> new NotFoundException("Answer not found")));
+
+        // Check the RequestBody is not valid
+        if (bindingResult.hasErrors()) {
+            List<RequiredFieldSignal> requiredFieldSignals = new ArrayList<>();
+            String errorMessage = "";
+            bindingResult.getFieldErrors().forEach(
+                    fieldError -> {
+                        requiredFieldSignals.add(
+                                new RequiredFieldSignal(fieldError.getField(), fieldError.getDefaultMessage()));
+                    }
+            );
+            for (RequiredFieldSignal requiredFieldSignal : requiredFieldSignals){
+                errorMessage += "Field required: "+ requiredFieldSignal.getField() +
+                        ", cause: "+ requiredFieldSignal.getCause() + "\n";
+            }
+
+            return new ResponseEntity<>(new ResponseReturn(LocalDateTime.now(),
+                    errorMessage,
+                    HttpStatus.BAD_REQUEST.value(),
+                    false,
+                    null), HttpStatus.BAD_REQUEST);
         }
 
-        AnswerDTO answer = answerService.getAnswer(question, answerId);
-        if (answer == null) {
-            return new ResponseEntity<>(
-                    new ResponseReturn("Cannot update answer because answer is not found.",
-                            404,
-                            false,
-                            null), HttpStatus.NOT_FOUND);
+        AnswerDTO returnAnswer = answerService.updateAnswer(answerId, reqBody);
 
-        }
-        AnswerInputValidation answerInputValidation = answerService.updateAndValidate(answerId, reqBody);
-        if (answerInputValidation.isAccepted()) {
-            return new ResponseEntity<>(
-                    new ResponseReturn(answerInputValidation.getMessage(),
-                            201,
-                            true,
-                            answerInputValidation.getAnswer()), HttpStatus.OK);
-        }
-        else {
-            return new ResponseEntity<>(
-                    new ResponseReturn(answerInputValidation.getMessage(),
-                            400,
-                            false,
-                            answerInputValidation.getAnswer()), HttpStatus.BAD_REQUEST);
-        }
+        return new ResponseEntity<>(
+                new ResponseReturn(LocalDateTime.now(),
+                        "Successfully created.",
+                        HttpStatus.OK.value(),
+                        true,
+                        returnAnswer), HttpStatus.OK);
+
     }
-
-
-
 
     /*
     HttpStatus - 204 - No Content means that there is no content to send in this request.
@@ -171,30 +197,18 @@ public class AnswerController {
     @DeleteMapping("questions/{questionid}/answers/{answerid}/delete")
     public ResponseEntity<ResponseReturn> deleteAnswer(@PathVariable("questionid") int questionId,
                                    @PathVariable("answerid") int answerId){
-        Optional<Question> question = answerService.getQuestionById(questionId);
-        if (question.isEmpty()){
-            return new ResponseEntity<>(
-                    new ResponseReturn("Cannot return question, check the parameter.",
-                            404,
-                            false,
-                            null), HttpStatus.BAD_REQUEST);
 
-        }
+        Optional<Question> question = Optional.ofNullable(answerService.getQuestionById(questionId).orElseThrow(()
+                -> new NotFoundException("Question not found")));
 
-        AnswerDTO answer = answerService.getAnswer(question, answerId);
-        if (answer == null) {
-            return new ResponseEntity<>(
-                    new ResponseReturn("Cannot delete answer because answer is not found.",
-                            404,
-                            false,
-                            null), HttpStatus.NOT_FOUND);
-
-        }
+        Optional.of(answerService.getAnswer(question, answerId).orElseThrow(()
+                -> new NotFoundException("Answer not found")));
 
         answerService.deleteAnswer(answerId);
         return new ResponseEntity<>(
-                new ResponseReturn("Deleted an answer with answerId: " + answerId,
-                        204,
+                new ResponseReturn(LocalDateTime.now(),
+                        "",
+                        HttpStatus.NO_CONTENT.value(),
                         true,
                         null), HttpStatus.NO_CONTENT);
     }

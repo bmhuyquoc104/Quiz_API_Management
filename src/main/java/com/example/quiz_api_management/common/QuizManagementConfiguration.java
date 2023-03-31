@@ -36,7 +36,7 @@ public class QuizManagementConfiguration {
             Answer sixthAnswer = new Answer("Itself", true, thirdQuestion);
 
             Question fourthQuestion = new Question("Is zero an even number ?", "long", firstQuiz);
-            Answer seventhAnswer = new Answer("Yesa", true, fourthQuestion);
+            Answer seventhAnswer = new Answer("Yes", true, fourthQuestion);
 
             Question fifthQuestion = new Question("Is zero a natural number ?", "long", firstQuiz);
             Answer eighthAnswer = new Answer("Yes", true, fifthQuestion);
@@ -49,7 +49,7 @@ public class QuizManagementConfiguration {
 
             Quiz secondQuiz = new Quiz("Math 2");
             Question sixthQuestion = new Question("a*a ?", "multiple", secondQuiz);
-            Answer ninthAnswer = new Answer("a^2", true, sixthQuestion);
+            Answer ninthAnswer = new Answer("Power of 2", true, sixthQuestion);
 
             Question seventhQuestion = new Question("2 to the power of 3 ?", "short", secondQuiz);
             Answer tenthAnswer = new Answer("8", true, seventhQuestion);
@@ -72,7 +72,7 @@ public class QuizManagementConfiguration {
 
             Quiz thirdQuiz = new Quiz("Basic Java 1");
             Question eleventhQuestion = new Question("WORA is ?", "long", thirdQuiz);
-            Answer seventeenthAnswer = new Answer("Write Once, Run Anywhere", true, eleventhQuestion);
+            Answer seventeenthAnswer = new Answer("Write Once Run Anywhere", true, eleventhQuestion);
 
             Question twelfthQuestion = new Question("Is Java object-oriented programming language ?", "long", thirdQuiz);
             Answer eighteenthAnswer = new Answer("Yes", true, twelfthQuestion);
@@ -84,7 +84,7 @@ public class QuizManagementConfiguration {
             Answer twentySecondAnswer = new Answer("8", true, thirteenthQuestion);
 
             Question fourthteenQuestion = new Question("Is Java object-oriented programming language ?", "long", thirdQuiz);
-            Answer twentyThirdAnswer = new Answer("Yes, it is", true, fourthteenQuestion);
+            Answer twentyThirdAnswer = new Answer("Yes", true, fourthteenQuestion);
 
             Question fifteenthQuestion = new Question("What is a class ?","long", thirdQuiz);
             Answer twentyFourthAnswer = new Answer("A blueprint of object", true, fifteenthQuestion);
@@ -96,7 +96,7 @@ public class QuizManagementConfiguration {
 
             Quiz fourthQuiz = new Quiz("Basic Java 2");
             Question sixteenthQuestion = new Question("How to define main function in Java ?", "long", fourthQuiz);
-            Answer twentyFifthAnswer = new Answer("public static void main(String []args)", true, sixteenthQuestion);
+            Answer twentyFifthAnswer = new Answer("public static void main", true, sixteenthQuestion);
 
             Question seventeenthQuestion = new Question("How many byte(s) does long type have?", "multiple", fourthQuiz);
             Answer twentySixthAnswer = new Answer("2", false, seventeenthQuestion);
@@ -120,7 +120,7 @@ public class QuizManagementConfiguration {
 
             Quiz fifthQuiz = new Quiz("Java OOP");
             Question twentyFirstQuestion = new Question("How to provoke superclass ?", "long", fifthQuiz);
-            Answer thirtyThirdAnswer = new Answer("super()", true, twentyFirstQuestion);
+            Answer thirtyThirdAnswer = new Answer("super", true, twentyFirstQuestion);
 
             Question twentySecondQuestion = new Question("How many principle(s) does OOP have?", "multiple", fifthQuiz);
             Answer thirtyFourthAnswer = new Answer("2", false, twentySecondQuestion);
