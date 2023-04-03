@@ -1,10 +1,10 @@
 package com.example.quiz_api_management.answer;
 
-import com.example.quiz_api_management.common.RequiredFieldSignal;
 import com.example.quiz_api_management.common.ResponseReturn;
 import com.example.quiz_api_management.exception.DuplicateException;
 import com.example.quiz_api_management.exception.NotFoundException;
 import com.example.quiz_api_management.question.Question;
+import com.example.quiz_api_management.util.RequestBodyError;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -69,16 +69,12 @@ public class AnswerController {
                         answerService.shuffleAnswers(question)), HttpStatus.OK);
     }
 
-    @GetMapping("questions/{questionid}/answers/{answerid}")
-    public ResponseEntity<ResponseReturn> getAnswer(@PathVariable("questionid") int questionId,
-                                                    @PathVariable("answerid") int answerId) {
-
-        Optional<Question> question = Optional.ofNullable(answerService.getQuestionById(questionId)
-                .orElseThrow(() -> new NotFoundException("Question not found")));
-
+    @GetMapping("/answers/{answerid}")
+    // Just only get a single answer with answerID, no need to check if a question exists
+    public ResponseEntity<ResponseReturn> getAnswer(@PathVariable("answerid") int answerId) {
         // Like above, this statement is used to check if answer is not found.
         // If not found, an exception is thrown
-        Optional<AnswerDTO> answerDTO = Optional.ofNullable(answerService.getAnswer(question, answerId)
+        Optional<AnswerDTO> answerDTO = Optional.ofNullable(answerService.getSingleAnswer(answerId)
                 .orElseThrow(() -> new NotFoundException("Answer not found")));
 
         return new ResponseEntity<>(
@@ -106,26 +102,10 @@ public class AnswerController {
 
         => Check if RequestBody is valid.
          */
+        // Refactor
         if (bindingResult.hasErrors()) {
-            List<RequiredFieldSignal> requiredFieldSignals = new ArrayList<>();
-            String errorMessage = "";
-            bindingResult.getFieldErrors().forEach(
-                    fieldError -> {
-                        requiredFieldSignals.add(
-                                new RequiredFieldSignal(fieldError.getField(), fieldError.getDefaultMessage()));
-                    }
-            );
-            for (RequiredFieldSignal requiredFieldSignal : requiredFieldSignals){
-                errorMessage += "Field required: "+ requiredFieldSignal.getField() +
-                        ", cause: "+ requiredFieldSignal.getCause() + " \n";
-            }
-
-
-            return new ResponseEntity<>(new ResponseReturn(LocalDateTime.now(),
-                    errorMessage,
-                    HttpStatus.BAD_REQUEST.value(),
-                    false,
-                    null), HttpStatus.BAD_REQUEST);
+            RequestBodyError requestBodyError = new RequestBodyError();
+            return requestBodyError.returnRequiredFields(bindingResult);
         }
 
         // Check any answer's value is similar to the value of RequestBody
@@ -149,7 +129,6 @@ public class AnswerController {
     public ResponseEntity<ResponseReturn> updateAnswer(@PathVariable("questionid") int questionId,
                                                        @PathVariable("answerid") int answerId,
                                                        @Valid @RequestBody AnswerDTO reqBody, BindingResult bindingResult) {
-
         // Check question is not found
         Optional<Question> question = Optional.ofNullable(answerService.getQuestionById(questionId).orElseThrow(()
                 -> new NotFoundException("Question not found")));
@@ -160,24 +139,8 @@ public class AnswerController {
 
         // Check the RequestBody is not valid
         if (bindingResult.hasErrors()) {
-            List<RequiredFieldSignal> requiredFieldSignals = new ArrayList<>();
-            String errorMessage = "";
-            bindingResult.getFieldErrors().forEach(
-                    fieldError -> {
-                        requiredFieldSignals.add(
-                                new RequiredFieldSignal(fieldError.getField(), fieldError.getDefaultMessage()));
-                    }
-            );
-            for (RequiredFieldSignal requiredFieldSignal : requiredFieldSignals){
-                errorMessage += "Field required: "+ requiredFieldSignal.getField() +
-                        ", cause: "+ requiredFieldSignal.getCause() + "\n";
-            }
-
-            return new ResponseEntity<>(new ResponseReturn(LocalDateTime.now(),
-                    errorMessage,
-                    HttpStatus.BAD_REQUEST.value(),
-                    false,
-                    null), HttpStatus.BAD_REQUEST);
+            RequestBodyError requestBodyError = new RequestBodyError();
+            return requestBodyError.returnRequiredFields(bindingResult);
         }
 
         AnswerDTO returnAnswer = answerService.updateAnswer(answerId, reqBody);
@@ -188,7 +151,6 @@ public class AnswerController {
                         HttpStatus.OK.value(),
                         true,
                         returnAnswer), HttpStatus.OK);
-
     }
 
     /*
