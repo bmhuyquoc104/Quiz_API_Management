@@ -4,6 +4,7 @@ import com.example.quiz_api_management.answer.Answer;
 import com.example.quiz_api_management.quiz.Quiz;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,9 +30,10 @@ public class Question {
     @Column(name = "id", unique = true)
     private int id;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "value", nullable = false)
+    private String value;
     @Column(name = "type", nullable = false)
+    @NotNull
     private String type;
 
     @Column(name = "created_at", nullable = false)
@@ -62,16 +64,15 @@ public class Question {
     @JoinColumn(name = "quiz_id")
     private Quiz quiz;
 
-    public Question(String name, String type, Quiz quiz) {
-        this.name = name;
+    public Question(String value, String type, Quiz quiz) {
+        this.value = value;
         this.type = type;
         this.quiz = quiz;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }
 
-    public Question(){
+    public Question() {
 
     }
-
 }
