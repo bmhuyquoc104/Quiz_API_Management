@@ -1,6 +1,7 @@
 package com.example.quiz_api_management.question;
 
 import com.example.quiz_api_management.quiz.Quiz;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,5 +13,7 @@ public interface QuestionRepository extends JpaRepository<Question, Integer> {
 
     List<Question> findQuestionsByQuiz(Optional<Quiz> quiz);
 
-    List<Question> findQuestionByType(String type, Pageable pageable);
+    Page<Question> findQuestionByType(String type, Pageable pageable);
+
+
 }

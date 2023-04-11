@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RequestBodyError {
-    public ResponseEntity<ResponseReturn> returnRequiredFields(BindingResult bindingResult){
+    public static ResponseEntity<ResponseReturn> returnRequiredFields(BindingResult bindingResult){
         List<RequiredFieldSignal> requiredFieldSignals = new ArrayList<>();
         String errorMessage = "";
         bindingResult.getFieldErrors().forEach(
@@ -22,7 +22,7 @@ public class RequestBodyError {
         );
         for (RequiredFieldSignal requiredFieldSignal : requiredFieldSignals){
             errorMessage += "Field required: "+ requiredFieldSignal.getField() +
-                    ", cause: "+ requiredFieldSignal.getCause() + " \n";
+                    ", cause: "+ requiredFieldSignal.getCause() + ". ";
         }
         return new ResponseEntity<>(new ResponseReturn(LocalDateTime.now(),
                 errorMessage,

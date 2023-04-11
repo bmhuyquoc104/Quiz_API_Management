@@ -21,7 +21,7 @@ public class QuizManagementConfiguration {
     CommandLineRunner commandLineRunner(QuestionRepository questionRepository, AnswerRepository answerRepository, QuizRepository quizRepository) {
         return args -> {
 
-            Quiz firstQuiz = new Quiz("Math 1");
+            Quiz firstQuiz = new Quiz("Math 1", "15 minutes");
             Question firstQuestion = new Question("Equation(s) to get result of 4 ?", "multiple", firstQuiz);
             Answer firstAnswer = new Answer("2 * 2", true, firstQuestion);
 
@@ -47,7 +47,7 @@ public class QuizManagementConfiguration {
 
 
 
-            Quiz secondQuiz = new Quiz("Math 2");
+            Quiz secondQuiz = new Quiz("Math 2", "45 minutes");
             Question sixthQuestion = new Question("a*a ?", "multiple", secondQuiz);
             Answer ninthAnswer = new Answer("Power of 2", true, sixthQuestion);
 
@@ -70,7 +70,7 @@ public class QuizManagementConfiguration {
 
 
 
-            Quiz thirdQuiz = new Quiz("Basic Java 1");
+            Quiz thirdQuiz = new Quiz("Basic Java 1", "60 minutes");
             Question eleventhQuestion = new Question("WORA is ?", "long", thirdQuiz);
             Answer seventeenthAnswer = new Answer("Write Once Run Anywhere", true, eleventhQuestion);
 
@@ -94,7 +94,7 @@ public class QuizManagementConfiguration {
 
 
 
-            Quiz fourthQuiz = new Quiz("Basic Java 2");
+            Quiz fourthQuiz = new Quiz("Basic Java 2", "60 minutes");
             Question sixteenthQuestion = new Question("How to define main function in Java ?", "long", fourthQuiz);
             Answer twentyFifthAnswer = new Answer("public static void main", true, sixteenthQuestion);
 
@@ -118,7 +118,7 @@ public class QuizManagementConfiguration {
 
 
 
-            Quiz fifthQuiz = new Quiz("Java OOP");
+            Quiz fifthQuiz = new Quiz("Java OOP", "exam");
             Question twentyFirstQuestion = new Question("How to provoke superclass ?", "long", fifthQuiz);
             Answer thirtyThirdAnswer = new Answer("super", true, twentyFirstQuestion);
 

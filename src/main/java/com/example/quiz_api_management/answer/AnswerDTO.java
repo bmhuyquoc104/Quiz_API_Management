@@ -1,6 +1,7 @@
 package com.example.quiz_api_management.answer;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,7 +24,8 @@ public class AnswerDTO {
         @Size - Limits the length of string field 'value'
      */
     @NotNull
-    @Size(min = 1, max = 20)
+    @Size(min = 1, max = 20, message = "length is not valid")
+    @Pattern(regexp="([A-Za-z0-9\s])+",message = "Invalid Input")
     private String value;
     @NotNull
     private boolean isCorrect;

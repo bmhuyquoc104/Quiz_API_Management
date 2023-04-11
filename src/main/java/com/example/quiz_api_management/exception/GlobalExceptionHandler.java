@@ -42,4 +42,15 @@ public class GlobalExceptionHandler {
                         false, null),
                 HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(NotValidParams.class)
+    public ResponseEntity<ResponseReturn> handleValidParamsException(Exception exception){
+        return new ResponseEntity<>(
+                new ResponseReturn(
+                        LocalDateTime.now(),
+                        exception.getMessage(),
+                        HttpStatus.BAD_REQUEST.value(), // 400
+                        false, null),
+                HttpStatus.BAD_REQUEST);
+    }
 }

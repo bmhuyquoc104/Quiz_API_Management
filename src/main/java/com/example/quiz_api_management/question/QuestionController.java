@@ -1,13 +1,16 @@
 package com.example.quiz_api_management.question;
 
+import com.example.quiz_api_management.common.PaginationReturn;
 import com.example.quiz_api_management.common.ResponseReturn;
 import com.example.quiz_api_management.exception.DuplicateException;
 import com.example.quiz_api_management.exception.NotFoundException;
+import com.example.quiz_api_management.exception.NotValidParams;
 import com.example.quiz_api_management.quiz.Quiz;
 
 import com.example.quiz_api_management.util.RequestBodyError;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
@@ -27,24 +30,37 @@ public class QuestionController {
         this.questionService = questionService;
     }
 
-    @RequestMapping(path="/questions")
-    public ResponseEntity<ResponseReturn> paginateQuestions(
-            @RequestParam(value = "page") int page,
-            @RequestParam(value = "filter", required = false) String filterType,
-            @RequestParam(value = "order", required = false) String levelOrder){
-        List<QuestionDTO> questions = questionService.paginateQuestions(page, filterType, levelOrder);
-        if (questions == null){
-            throw new NotFoundException("Pagination cannot be returned.");
-        }
+    @GetMapping(path="/questions")
+    public ResponseEntity<PaginationReturn> paginateQuestions(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "filter", required = false) String filterQuery,
+            @RequestParam(value = "sort", required = false) String sortQuery) {
+
+        if (filterQuery != null && !questionService.checkValidTypeFilter(filterQuery))
+            throw new NotValidParams("Check query for filtering.");
+
+        if (sortQuery != null && !questionService.checkValidValueSort(sortQuery))
+            throw new NotValidParams("Check query for sorting.");
+
+        Page<QuestionDTO> paginationQuestion = questionService.paginateQuestions(page, filterQuery, sortQuery);
+        int currentPage = questionService.getCurrentPage(paginationQuestion);
         return new ResponseEntity<>(
-                new ResponseReturn(LocalDateTime.now(),
+                new PaginationReturn(LocalDateTime.now(),
                         "Pagination of questions is returned.",
                         HttpStatus.OK.value(),
                         true,
-                        questions), HttpStatus.OK);
+                        paginationQuestion.getContent(),
+                        currentPage,
+                        paginationQuestion.getTotalPages(),
+                        paginationQuestion.getNumberOfElements(),
+                        paginationQuestion.getTotalElements(),
+                        paginationQuestion.hasNext(),
+                        paginationQuestion.hasPrevious()),
+                        HttpStatus.OK);
+
     }
 
-    @RequestMapping(path = "/quiz/{quizid}/questions")
+    @GetMapping(path = "/quiz/{quizid}/questions")
     public ResponseEntity<ResponseReturn> getQuestionsByQuiz(@PathVariable("quizid") int quizId) {
 
         Optional<Quiz> quiz = Optional.ofNullable(questionService.getQuizById(quizId)
@@ -60,7 +76,7 @@ public class QuestionController {
     }
 
 
-    @RequestMapping(path = "/questions/{questionid}")
+    @GetMapping(path = "/questions/{questionid}")
     public ResponseEntity<ResponseReturn> getQuestion(@PathVariable("questionid") int questionId) {
         Optional<QuestionDTO> questionDTO = Optional.ofNullable(questionService.getQuestion(questionId)
                 .orElseThrow(() -> new NotFoundException("Question not found")));
@@ -74,7 +90,7 @@ public class QuestionController {
     }
 
 
-    @RequestMapping(path = "/quiz/{quizid}/questions/add")
+    @PostMapping(path = "/quiz/{quizid}/question")
     public ResponseEntity<ResponseReturn> createQuestion(@PathVariable("quizid") int quizId,
                                                          @Valid @RequestBody QuestionDTO reqBody,
                                                          BindingResult bindingResult){
@@ -85,8 +101,7 @@ public class QuestionController {
             throw new DuplicateException("Duplicate value found.");
 
         if (bindingResult.hasErrors()) {
-            RequestBodyError error = new RequestBodyError();
-            return error.returnRequiredFields(bindingResult);
+            return RequestBodyError.returnRequiredFields(bindingResult);
         }
 
         QuestionDTO newQuestion = questionService.createQuestion(quiz, reqBody);
@@ -99,13 +114,12 @@ public class QuestionController {
     }
 
 
-    @RequestMapping(path = "/questions/{questionid}/edit")
+    @PutMapping(path = "/questions/{questionid}")
     public ResponseEntity<ResponseReturn> updateQuestion(@PathVariable("questionid") int questionId,
                                                          @RequestBody QuestionDTO reqBody,
                                                          BindingResult bindingResult){
         if (bindingResult.hasErrors()) {
-            RequestBodyError error = new RequestBodyError();
-            return error.returnRequiredFields(bindingResult);
+            return RequestBodyError.returnRequiredFields(bindingResult);
         }
 
         QuestionDTO newQuestion = questionService.updateQuestion(questionId, reqBody);
@@ -117,7 +131,7 @@ public class QuestionController {
                 newQuestion), HttpStatus.CREATED);
     }
 
-    @RequestMapping(path="/questions/{questionid}/delete")
+    @DeleteMapping(path="/questions/{questionid}")
     public ResponseEntity<ResponseReturn> deleteQuestion(@PathVariable("questionid") int questionId){
         questionService.getQuestion(questionId).orElseThrow(()
                 -> new NotFoundException("Question not found"));
@@ -130,4 +144,6 @@ public class QuestionController {
                 true,
                 null), HttpStatus.NO_CONTENT);
     }
+
+
 }

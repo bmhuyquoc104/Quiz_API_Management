@@ -11,7 +11,6 @@ public enum QuestionFilter {
 
     public static boolean contains(String checkValid){
         for (QuestionFilter questionFilter: QuestionFilter.values()){
-            System.out.println(questionFilter.questionType);
             if(questionFilter.questionType.equals(checkValid)) return true;
         }
         return false;

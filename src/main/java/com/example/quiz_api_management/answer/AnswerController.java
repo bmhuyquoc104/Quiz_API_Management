@@ -88,11 +88,12 @@ public class AnswerController {
     /*
     201 - Created returns when the request succeeded, and a new resource was created as a result.
      */
-    @PostMapping("questions/{questionid}/answers/add")
+    @PostMapping("questions/{questionid}/answers")
     public ResponseEntity<ResponseReturn> addAnswer(@PathVariable("questionid") int questionId,
                                                     @Valid @RequestBody AnswerDTO reqBody, BindingResult bindingResult) {
         Optional<Question> question = Optional.ofNullable(answerService.getQuestionById(questionId).orElseThrow(()
                 -> new NotFoundException("Question not found")));
+
 
         /*
         bindingResult is used along with @Valid annotation.
@@ -103,9 +104,9 @@ public class AnswerController {
         => Check if RequestBody is valid.
          */
         // Refactor
+
         if (bindingResult.hasErrors()) {
-            RequestBodyError requestBodyError = new RequestBodyError();
-            return requestBodyError.returnRequiredFields(bindingResult);
+            return RequestBodyError.returnRequiredFields(bindingResult);
         }
 
         // Check any answer's value is similar to the value of RequestBody
@@ -125,7 +126,7 @@ public class AnswerController {
     /*
     400 - Bad Request status code indicates that the server cannot proceed.
      */
-    @PutMapping("questions/{questionid}/answers/{answerid}/edit")
+    @PutMapping("questions/{questionid}/answers/{answerid}")
     public ResponseEntity<ResponseReturn> updateAnswer(@PathVariable("questionid") int questionId,
                                                        @PathVariable("answerid") int answerId,
                                                        @Valid @RequestBody AnswerDTO reqBody, BindingResult bindingResult) {
@@ -139,8 +140,7 @@ public class AnswerController {
 
         // Check the RequestBody is not valid
         if (bindingResult.hasErrors()) {
-            RequestBodyError requestBodyError = new RequestBodyError();
-            return requestBodyError.returnRequiredFields(bindingResult);
+            return RequestBodyError.returnRequiredFields(bindingResult);
         }
 
         AnswerDTO returnAnswer = answerService.updateAnswer(answerId, reqBody);
@@ -156,7 +156,7 @@ public class AnswerController {
     /*
     HttpStatus - 204 - No Content means that there is no content to send in this request.
      */
-    @DeleteMapping("questions/{questionid}/answers/{answerid}/delete")
+    @DeleteMapping("questions/{questionid}/answers/{answerid}")
     public ResponseEntity<ResponseReturn> deleteAnswer(@PathVariable("questionid") int questionId,
                                    @PathVariable("answerid") int answerId){
 

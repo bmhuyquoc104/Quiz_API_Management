@@ -4,6 +4,7 @@ import com.example.quiz_api_management.common.OrderSort;
 import com.example.quiz_api_management.quiz.Quiz;
 import com.example.quiz_api_management.quiz.QuizRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -80,49 +81,63 @@ public class QuestionService {
 
 
     //Pagination + Filtering + Sorting by 'value' with ASC or DESC order
-    public List<QuestionDTO> paginateQuestions(int page, String filterType, String levelSort){
-        int defaultSize = 10;
+    public Page<QuestionDTO> paginateQuestions(int page, String filterQuery, String sortQuery){
         Pageable pageable;
-        // Check if levelSort is a valid string and levelSort belongs to {"asc", "desc"}
-        if (levelSort != null && OrderSort.contains(levelSort))
-            pageable = sortedPageable(page, levelSort);
-        // Check if levelSort is not valid for ordering, does not belong to {"asc", "desc"}
-        else if (levelSort != null)
-            return null;
-        else
-            pageable = PageRequest.of(page, defaultSize);
-        return filterPageRequest(pageable, filterType);
+        // Due to first page always be 0 (Page class)
+        page--;
+        if (sortQuery != null)
+            pageable = sortedPageable(page , sortQuery);
+        else {
+            int defaultSize = 10;
+            pageable = PageRequest.of(page , defaultSize);
+        }
+        return filterPageRequest(pageable, filterQuery);
     }
 
-    public List<QuestionDTO> filterPageRequest(Pageable pageable, String filterType){
-        // Check if filterType belongs to {"multiple", "long", "short"}
-        if (filterType != null && QuestionFilter.contains(filterType))
-            return questionRepository
-                    .findQuestionByType(filterType, pageable)
-                    .stream()
-                    .map(questionDTOMapper)
-                    .toList();
-        // Check if filterType is not valid for question types, does not belong to {"multiple", "long", "short"}
-        else if (filterType != null)
-            return null;
+    public Page<QuestionDTO> filterPageRequest(Pageable pageable, String filterType){
+        if (filterType != null)
+            return questionRepository.findQuestionByType(filterType.toLowerCase(), pageable).map(questionDTOMapper);
         else
-            return questionRepository
-                    .findAll(pageable)
-                    .stream()
-                    .map(questionDTOMapper)
-                    .toList();
+            return questionRepository.findAll(pageable).map(questionDTOMapper);
     }
 
-    public PageRequest sortedPageable(int page, String orderLevel){
+    public PageRequest sortedPageable(int page, String propertySort){
         int defaultSize = 10;
-        if (Objects.equals(orderLevel, OrderSort.ASC.levelOrder)) {
+        propertySort = propertySort.toLowerCase();
+        String valueType = propertySort.split(",")[0];
+        String levelOrder = propertySort.split(",")[1];
+        if (Objects.equals(levelOrder, OrderSort.ASC.levelOrder)) {
            return PageRequest.of(page, defaultSize,
-                    Sort.by("value").descending()); // Option for sorting by value with descending order
+                    Sort.by(valueType).ascending()); // Option for sorting by value with descending order
         }
         else  {
            return PageRequest.of(page, defaultSize,
-                    Sort.by("value").ascending()); // Option for sorting by value with descending order
-
+                    Sort.by(valueType).descending()); // Option for sorting by value with descending order
         }
     }
+
+    public boolean checkValidTypeFilter(String filterType){
+        // Check if filterType belongs to {"multiple", "long", "short"}
+        return QuestionFilter.contains(filterType);
+    }
+
+
+    /* Check if propertySort is a valid string, propertySort should be "value,desc" or "value,asc"
+    Take substring of propertySort before "," to get "value"
+    Take substring after "," to get "asc" or "desc", valueSort should be "desc" or "asc" */
+    public boolean checkValidValueSort(String propertySort){
+        propertySort = propertySort.toLowerCase();
+        String valueSort = propertySort.split(",")[0];
+        String levelSort = propertySort.split(",")[1];
+        return OrderSort.contains(levelSort) && Objects.equals(valueSort, "value");
+    }
+
+    // Should be incremented again due to first page always be 0 (Page class)
+    public int getCurrentPage(Page<QuestionDTO> paginationQuestion){
+        return paginationQuestion.getNumber() + 1;
+    }
+
+
 }
+
+
